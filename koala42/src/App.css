@@ -24,3 +24,6 @@ tr:nth-child(odd) {
   color: #F2F2F2;
 }
 
+.button-delete{
+  color: red;
+}
