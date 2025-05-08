@@ -1,9 +1,10 @@
 import './App.css';
+import DisplayJson from './components/disaplyJson';
 
 function App() {
   return (
-    <div className="App">
-      <h1>Hello</h1>
+    <div>
+      <DisplayJson/>
     </div>
   );
 }
