@@ -4,145 +4,150 @@ import aData from "../example-data.json";
 import { LiaBanSolid } from "react-icons/lia";
 import { SlArrowRight, SlArrowDown } from "react-icons/sl";
 
-const deleteElement = (nodes, idToDelete) => {
-  const cleanChildren = (children) => {
-    const cleaned = {};
-    for (const [relation, { records }] of Object.entries(children || {})) {
-      const newRecords = records
-        .filter((child) => child.data.ID !== idToDelete)
-        .map((child) => ({
-          ...child,
-          children: cleanChildren(child.children),
-        }));
-      if (newRecords.length > 0) {
-        cleaned[relation] = { records: newRecords };
-      }
-    }
-    return cleaned;
+const deleteElement = (n, dataToDelete) => {
+    const deleteN = (nList) => {
+        return nList
+        .filter((node) => node !== dataToDelete)
+        .map((node) => {
+            let newCh = {};
+            for (const [rel, { records }] of Object.entries(node.children || {})) 
+            {
+                const filtered = deleteN(records);
+                if (filtered.length > 0) 
+                {
+                    newCh[rel] = { records: filtered };
+                }
+            }
+            return {
+            ...node,
+            children: newCh,
+            };
+        });
   };
 
-  return nodes
-    .filter((node) => node.data.ID !== idToDelete)
-    .map((node) => ({
-      ...node,
-      children: cleanChildren(node.children),
-    }));
+  return deleteN(n);
 };
 
-const Row = ({ row, level = 0, onDelete }) => {
-  const [expanded, setExpanded] = useState(false);
-  const hasChildren = Object.values(row.children).some(
+const Line = ({ LineOfData, level, onDelete }) => {
+    const [idDown, setDown] = useState(false);
+    const hasMoreElements = Object.values(LineOfData.children).some(
     (group) => group.records.length > 0
-  );
-  let dataKeys = Object.keys(row.data);
-
-  const toggle = () => {
-    setExpanded((prev) => !prev);
-  };
-
-  const renderChildren = (children) => {
-    return Object.values(children).flatMap((group, groupIndex) =>
-      group.records.map((child, index) => (
-        <Row
-          key={`${
-            child.data.ID || child.data["Nemesis ID"] || child.data["Secrete Code"]
-          }-${groupIndex}-${index}`}
-          row={child}
-          level={level + 1}
-          onDelete={onDelete}
-        />
-      ))
     );
-  };
 
-  let childDataKeys = [];
+    let dataKeys = Object.keys(LineOfData.data);
 
-  if (hasChildren) {
-    const childrenValues = Object.values(row.children);
-    const firstChild = childrenValues[0];
-    const firstRecord = firstChild.records[0];
-  
-    if (firstRecord && firstRecord.data) {
-      childDataKeys = Object.keys(firstRecord.data);
+    const clickDownArrow = () => setDown((swch) => !swch);
+
+    const displayChilderElement = (children) => {
+    return Object.values(children).flatMap((group, groupIndex) =>
+        group.records.map((child, index) => (
+        <Line
+            key={`${
+            child.data.ID || child.data["Nemesis ID"] || child.data["Secrete Code"]
+            }-${groupIndex}-${index}`}
+            LineOfData={child}
+            level={level + 1}
+            onDelete={onDelete}
+        />
+        ))
+        );
+    };
+
+    let chKeys = [];
+
+    if (hasMoreElements)
+    {
+        let chGroup = Object.values(LineOfData.children);
+        let fGroup = chGroup[0];
+        
+        if (fGroup && fGroup.records && fGroup.records[0]) 
+        {
+            let fRec = fGroup.records[0];
+            
+            if (fRec.data) {
+                chKeys = Object.keys(fRec.data);
+            }
+        }
     }
-  }
 
-  return (
-    <>
-      <tr onClick={toggle}>
-        <td>
-          {hasChildren && (
-            <span>{expanded ? <SlArrowDown /> : <SlArrowRight />}</span>
-          )}
-        </td>
-        {dataKeys.map((key) => (
-          <td key={key}>{row.data[key].toString()}</td>
-        ))}
-        <td className="button-delete" onClick={() => {
-            onDelete(row.data.ID);
-          }}
-        >
-          <LiaBanSolid />
-        </td>
-      </tr>
+    return (
+        <>
+            <tr onClick={clickDownArrow}>
+                <td>
+                    {hasMoreElements && (
+                    <span>{idDown ? <SlArrowDown /> : <SlArrowRight />}</span>
+                    )}
+                </td>
+                {dataKeys.map((key) => (
+                <td key={key}>{LineOfData.data[key].toString()}</td>
+                ))}
+                <td
+                className="button-delete"
+                onClick={() => {
+                onDelete(LineOfData); 
+                }}
+                >
+                    <LiaBanSolid />
+                </td>
+            </tr>
 
-      {expanded && hasChildren && (
-        <tr>
-          <td colSpan={dataKeys.length + 2}>
-            <table>
-              <thead>
-                <tr>
-                    <th></th>
-                    {childDataKeys.map((key) => (
-                        <th key={key}>{key}</th>
-                    ))}
-                  <th>Delete</th>
-                </tr>
-              </thead>
-              <tbody>{renderChildren(row.children)}</tbody>
-            </table>
-          </td>
-        </tr>
-      )}
-    </>
-  );
+            {idDown && hasMoreElements && (
+            <tr>
+                <td colSpan={dataKeys.length + 2}>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                {chKeys.map((key) => (
+                                <th key={key}>{key}</th>
+                                ))}
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>{displayChilderElement(LineOfData.children)}</tbody>
+                    </table>
+                </td>
+            </tr>
+            )}
+        </>
+    );
 };
 
 const Display = () => {
-  const [data, setData] = useState(aData);
+    const [data, setData] = useState(aData);
 
-  const handleDelete = (id) => {
-    const updatedData = deleteElement(data, id);
-    setData(updatedData);
-  };
+    const clickDelete = (dataToDelete) => {
+    let newData = deleteElement(data, dataToDelete);
+    setData(newData);
+    };
 
-  return (
+    return (
     <div className="App">
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Gender</th>
-            <th>Ability</th>
-            <th>Minimal distance</th>
-            <th>Weight</th>
-            <th>Born</th>
-            <th>In space since</th>
-            <th>Beer consumption (l/y)</th>
-            <th>Knows the answer?</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, index) => (
-            <Row key={row.data + index} row={row} onDelete={handleDelete} />
-          ))}
-        </tbody>
-      </table>
+        <table>
+            <thead>
+                <tr>
+                <th></th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Ability</th>
+                <th>Minimal distance</th>
+                <th>Weight</th>
+                <th>Born</th>
+                <th>In space since</th>
+                <th>Beer consumption (l/y)</th>
+                <th>Knows the answer?</th>
+                <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((LineOfData, index) => (
+                <Line key={index} LineOfData={LineOfData} onDelete={clickDelete} />
+                ))}
+            </tbody>
+        </table>
     </div>
-  );
+    );
 };
 
 export default Display;
